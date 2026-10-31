@@ -12,6 +12,7 @@
 #   QUICK=1           GPU vs CPU only: no depth sweep, tuning grid or speculation
 #   SPEC=0            skip the speculative-decoding pairs
 #   REPS=<n>          llama-bench repetitions (default 3)
+#   FORCE=1           run models that leave less than GTT_HEADROOM_MIB free (see below)
 #
 # <label> names the hardware, e.g. fw13-7840u; it replaces the hostname.
 # Writes results/<date>_<label>_<build>/:
@@ -26,6 +27,13 @@
 # Long-context runs use -ub 256: on the 780M, the default 512 with a 2048-token
 # prompt on 16k of context ran one GPU dispatch past amdgpu's compute timeout
 # (vk::DeviceLostError). See hardware/780m.md.
+#
+# A model that leaves less than GTT_HEADROOM_MIB (default 2048) of the GPU's
+# mappable memory (GTT) free is skipped, unless FORCE=1. Close to the limit,
+# any other GPU client (a GPU-drawn terminal, the desktop) forces the kernel to
+# evict and swap GPU buffers; on Ubuntu kernel 7.0.0-38 that path corrupted
+# TTM's lists and froze the machine (a 14.6 GB model in 15.1 GiB of GTT).
+# Raise GTT with ttm.pages_limit instead; see hardware/780m.md.
 set -uo pipefail
 
 label=${1:?usage: bench/run.sh <label> [model.gguf ...]}
@@ -66,6 +74,13 @@ build=$(grep -o -E 'build [0-9]+' <<<"$version" | tr -d ' ' | sed 's/build/b/')
 [[ -n $build ]] || build="b$(grep -o -E '[0-9]+' <<<"$version" | head -1)-distro"
 
 out="$repo/results/$(date +%Y-%m-%d)_${label}_${build}"
+# Never append to an earlier run's files: a second run the same day (e.g. after
+# a crash) gets its own directory, -2, -3, ...
+if [[ -e $out ]]; then
+    n=2
+    while [[ -e $out-$n ]]; do n=$((n + 1)); done
+    out=$out-$n
+fi
 mkdir -p "$out"
 sanitize() { python3 "$here/redact.py" filter; }
 
@@ -133,7 +148,14 @@ server_run() {
     rm -f "$log"
 }
 
+gtt_mib=$(jq -r '.gpu.gtt_mib // 0 | floor' "$out/env.json")
 for m in "${models[@]}"; do
+    size_mib=$(($(stat -c %s "$m") / 1048576))
+    if ((gtt_mib > 0 && size_mib + ${GTT_HEADROOM_MIB:-2048} > gtt_mib)) && [[ ${FORCE:-0} != 1 ]]; then
+        echo "[skip] $(basename "$m"): ${size_mib} MiB leaves under ${GTT_HEADROOM_MIB:-2048} MiB of the ${gtt_mib} MiB GTT free (FORCE=1 to run it)" |
+            tee -a "$out/errors.log" >&2
+        continue
+    fi
     bench gpu-vs-cpu -m "$m" -dev Vulkan0 -ngl 99 -fa 1 -p 512 -n 128
     bench gpu-vs-cpu -m "$m" -dev none -ngl 0 -t 8 -p 512 -n 128
     ((QUICK)) && continue
