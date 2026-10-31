@@ -7,9 +7,11 @@
 2. Run it idle, on AC, in the performance power profile, with the browser
    closed. If you can't, keep the warnings: they're recorded in `env.json`
    and shown in the report.
-3. Check the results directory for anything identifying before committing.
-   The scripts avoid hostnames, usernames, serials and addresses, but read
-   `env.json` yourself.
+3. Keep private names out. Put your internal domains and host names in
+   `~/.config/amd-ryzen-inference/redact.txt` (see
+   `bench/redact.example.txt`) **before** running, and enable the hooks with
+   `git config core.hooksPath .githooks`; see "Privacy" in the README. Then
+   read `env.json` and `report.md` yourself before committing.
 4. Open a pull request adding `results/<date>_<label>_<build>/` unchanged.
    If your hardware is new here, add or extend a note in `hardware/`.
 

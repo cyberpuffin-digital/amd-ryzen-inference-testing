@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuse a commit whose staged files or identity contain a private name
+# (bench/redact.py). Enable once per clone: git config core.hooksPath .githooks
+exec python3 "$(git rev-parse --show-toplevel)/bench/redact.py" check --staged

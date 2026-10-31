@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse a commit message containing a private name (bench/redact.py).
+exec python3 "$(git rev-parse --show-toplevel)/bench/redact.py" check --message "$1"

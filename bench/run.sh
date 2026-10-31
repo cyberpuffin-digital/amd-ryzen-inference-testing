@@ -19,7 +19,9 @@
 #   llama-bench.jsonl one llama-bench row per line, plus "section"
 #   spec.jsonl        speculative-decoding runs through the llama.cpp server
 #   report.md         generated from the above by bench/report.py
-# Home-directory paths are rewritten to ~ before anything is written.
+# Everything written passes through bench/redact.py filter: home paths become
+# ~, and private names (hostname, search domains, username, your local
+# redact.txt, private IPs and MACs) become [redacted].
 #
 # Long-context runs use -ub 256: on the 780M, the default 512 with a 2048-token
 # prompt on 16k of context ran one GPU dispatch past amdgpu's compute timeout
@@ -65,7 +67,7 @@ build=$(grep -o -E 'build [0-9]+' <<<"$version" | tr -d ' ' | sed 's/build/b/')
 
 out="$repo/results/$(date +%Y-%m-%d)_${label}_${build}"
 mkdir -p "$out"
-sanitize() { sed "s#$HOME#~#g"; }
+sanitize() { python3 "$here/redact.py" filter; }
 
 # --- Models: projectors and built-in draft heads can't be benchmarked alone.
 if (($#)); then

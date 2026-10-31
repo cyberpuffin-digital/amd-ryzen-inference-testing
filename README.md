@@ -58,7 +58,8 @@ download.
 ## Layout
 
 ```
-bench/      build-llama-cpp.sh, run.sh, capture-env.sh, report.py
+bench/      build-llama-cpp.sh, run.sh, capture-env.sh, report.py, redact.py
+.githooks/  pre-commit, commit-msg, pre-push: refuse private names (bench/redact.py)
 models/     pinned model sets (*.tsv), fetch.sh, hf-manifest.py
 hardware/   per-hardware notes: settings, gotchas, open questions
 results/    one directory per run; raw files are never edited
@@ -68,9 +69,27 @@ docs/       background and decisions
 ## Privacy
 
 Results identify hardware by a label you choose, not by hostname. The capture
-reads no serial numbers, UUIDs, MAC or IP addresses, hostnames or usernames,
-and home-directory paths are rewritten to `~` before anything is written.
-Check a results directory before you commit it anyway.
+reads no serial numbers, UUIDs, MAC or IP addresses, hostnames or usernames.
+
+As a second layer, everything a run writes passes through
+`bench/redact.py filter`: home-directory paths become `~`, and private names
+become `[redacted]`. What counts as private is never listed in this
+repository, since that list would publish it. It is derived from your machine
+(hostname, DNS search domains, username), plus a local file for anything else,
+such as internal domains or other hosts: copy
+[`bench/redact.example.txt`](bench/redact.example.txt) to
+`~/.config/amd-ryzen-inference/redact.txt`. Private IPv4 and MAC addresses are
+built in. `bench/redact.py patterns` shows what is in use.
+
+The same patterns guard commits. Enable the hooks once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+They refuse a commit whose files, author or message contain a private name,
+and a push whose commits do, on every remote. Read a results directory before
+you commit it anyway.
 
 ## Contributing
 
