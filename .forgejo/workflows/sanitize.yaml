@@ -1,0 +1,49 @@
+# Fail any push or pull request that would publish a private name: internal
+# domains and hosts, IP or MAC addresses (bench/redact.py). The local git
+# hooks do the same before a commit or push; this catches what they can't see,
+# such as web-UI edits and clones without the hooks enabled.
+#
+# The push mirror to GitHub runs on every push regardless of this check, so a
+# failure here is an alarm: fix the content, then rewrite the offending
+# commits on both remotes.
+#
+# The private pattern list is the REDACT_PATTERNS Actions secret (one regular
+# expression per line, as in bench/redact.example.txt); it is never in the
+# repository. Pull requests from forks get no secrets, so they are checked
+# against the built-in patterns only, with a warning.
+#
+# runs-on: k8s-prod has python3 in its image and serves this org's jobs.
+name: sanitize
+on:
+  push:
+  pull_request:
+jobs:
+  redact-check:
+    runs-on: k8s-prod
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Built-in patterns behave (addresses caught, look-alikes kept)
+        run: python3 bench/redact.py --self-test
+      - name: No private names in any file or any commit
+        env:
+          REDACT_PATTERNS: ${{ secrets.REDACT_PATTERNS }}
+          # A runner's own hostname and username are irrelevant here.
+          REDACT_NO_DERIVED: "1"
+          # Public logs: report file, line and pattern number, never the match.
+          REDACT_HIDE_MATCHES: "1"
+        run: |
+          list=$(mktemp)
+          trap 'rm -f "$list"' EXIT
+          if [ -n "$REDACT_PATTERNS" ]; then
+            printf '%s\n' "$REDACT_PATTERNS" >"$list"
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            echo "::warning::REDACT_PATTERNS is not available (fork pull request?): checking built-in patterns only"
+          else
+            echo "::error::the REDACT_PATTERNS secret is not set for this repository"
+            exit 1
+          fi
+          # The whole tree at HEAD, plus every commit's message, author and committer.
+          REDACT_FILE=$list python3 bench/redact.py check --push HEAD

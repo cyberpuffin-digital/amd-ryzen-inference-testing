@@ -60,6 +60,7 @@ download.
 ```
 bench/      build-llama-cpp.sh, run.sh, capture-env.sh, report.py, redact.py
 .githooks/  pre-commit, commit-msg, pre-push: refuse private names (bench/redact.py)
+.forgejo/   CI: the same check on every push and pull request
 models/     pinned model sets (*.tsv), fetch.sh, hf-manifest.py
 hardware/   per-hardware notes: settings, gotchas, open questions
 results/    one directory per run; raw files are never edited
@@ -88,8 +89,10 @@ git config core.hooksPath .githooks
 ```
 
 They refuse a commit whose files, author or message contain a private name,
-and a push whose commits do, on every remote. Read a results directory before
-you commit it anyway.
+and a push whose commits do, on every remote. CI runs the same check on every
+push and pull request (`.forgejo/workflows/sanitize.yaml`), with the private
+list held as a repository secret and matches reported by pattern number only.
+Read a results directory before you commit it anyway.
 
 ## Contributing
 

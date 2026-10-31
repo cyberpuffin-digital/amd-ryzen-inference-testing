@@ -19,6 +19,13 @@ private names in a public file would publish them. It comes from:
   ${XDG_CONFIG_HOME:-~/.config}/amd-ryzen-inference/redact.txt, or
   $REDACT_FILE. See bench/redact.example.txt.
 
+In CI (.forgejo/workflows/sanitize.yaml) the local file comes from an Actions
+secret, and two switches apply: REDACT_NO_DERIVED=1 skips the machine's own
+names (a runner's are irrelevant, and a username like "root" would flag
+ordinary text), and REDACT_HIDE_MATCHES=1 reports the pattern's number
+instead of the matched text, because public CI logs must not show what was
+found.
+
 Also built in, because they are never wanted in published results: every IPv4
 and IPv6 address (private, CGNAT and public alike) and MAC addresses.
 `bench/redact.py --self-test` checks them against addresses and look-alikes
@@ -77,7 +84,7 @@ def derived_names():
 
 
 def patterns():
-    pats = [re.escape(n) for n in derived_names()]
+    pats = [] if os.environ.get("REDACT_NO_DERIVED") == "1" else [re.escape(n) for n in derived_names()]
     f = redact_file()
     if f.exists():
         for line in f.read_text().splitlines():
@@ -97,11 +104,11 @@ def redact(text, pats):
 
 
 def find(text, pats):
-    """[(line number, matched text)] for every private name in text."""
+    """[(line number, matched text, pattern number)] for every private name in text."""
     hits = []
     for n, line in enumerate(text.splitlines(), 1):
-        for p in pats:
-            hits += [(n, m.group(0)) for m in p.finditer(line)]
+        for i, p in enumerate(pats, 1):
+            hits += [(n, m.group(0), i) for m in p.finditer(line)]
     return hits
 
 
@@ -110,9 +117,11 @@ def git(*args):
 
 
 def report(where, hits):
-    for n, m in hits:
+    hide = os.environ.get("REDACT_HIDE_MATCHES") == "1"
+    for n, m, i in hits:
         # Show where, not the whole line: the line itself may be the leak.
-        print(f"{where}:{n}: private name '{m}'", file=sys.stderr)
+        what = f"(pattern {i})" if hide else f"'{m}'"
+        print(f"{where}:{n}: private name {what}", file=sys.stderr)
     return bool(hits)
 
 
