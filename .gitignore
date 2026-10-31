@@ -1,0 +1,4 @@
+*.gguf
+*.partial
+__pycache__/
+results/*/stderr.log
