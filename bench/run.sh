@@ -21,7 +21,7 @@
 #   report.md         generated from the above by bench/report.py
 # Everything written passes through bench/redact.py filter: home paths become
 # ~, and private names (hostname, search domains, username, your local
-# redact.txt, private IPs and MACs) become [redacted].
+# redact.txt, all IP and MAC addresses) become [redacted].
 #
 # Long-context runs use -ub 256: on the 780M, the default 512 with a 2048-token
 # prompt on 16k of context ran one GPU dispatch past amdgpu's compute timeout

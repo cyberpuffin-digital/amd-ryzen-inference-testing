@@ -7,6 +7,7 @@
     bench/redact.py check --message FILE  # a commit message (commit-msg hook)
     bench/redact.py check --push RANGE    # pushed commits: tree, messages, identities (pre-push hook)
     bench/redact.py patterns              # list the patterns in use (to check the setup)
+    bench/redact.py --self-test           # check the built-in patterns
 
 What counts as private is never written in this repository, since a list of
 private names in a public file would publish them. It comes from:
@@ -18,8 +19,10 @@ private names in a public file would publish them. It comes from:
   ${XDG_CONFIG_HOME:-~/.config}/amd-ryzen-inference/redact.txt, or
   $REDACT_FILE. See bench/redact.example.txt.
 
-Also built in, because they are never wanted in published results: private
-IPv4 addresses (RFC 1918) and MAC addresses.
+Also built in, because they are never wanted in published results: every IPv4
+and IPv6 address (private, CGNAT and public alike) and MAC addresses.
+`bench/redact.py --self-test` checks them against addresses and look-alikes
+(version strings, timestamps, C++ scopes).
 
 Home-directory paths are rewritten to ~ by `filter` before the patterns run.
 Standard library only.
@@ -32,11 +35,23 @@ import socket
 import subprocess
 import sys
 
+_OCTET = r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)"
+_H = r"[0-9a-f]{1,4}"
 BUILT_IN = [
-    r"\b(?:10|127)\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
-    r"\b192\.168\.\d{1,3}\.\d{1,3}\b",
-    r"\b172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}\b",
-    r"\b[0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5}\b",
+    # Every IPv4 address, not only private ranges: CGNAT (100.64/10), VPN
+    # endpoints and WAN addresses are just as identifying. Each part must be
+    # 0-255, and a dotted quad inside a longer run of dots (a 5-part version
+    # string) doesn't count.
+    rf"(?<![\d.]){_OCTET}(?:\.{_OCTET}){{3}}(?![\d.]*\d)",
+    # IPv6: full form (8 groups) or compressed with "::". Eight groups or a
+    # "::" are required, so clock times like 12:09:42 don't match, and no
+    # letter, digit or underscore may touch either end, so C++ scopes like
+    # std::vector and vk::DeviceLostError in llama.cpp's errors don't either.
+    rf"(?<![\w:])(?:{_H}:){{7}}{_H}(?![\w:])",
+    rf"(?<![\w:])(?:{_H}:){{1,6}}:(?:{_H}(?::{_H}){{0,5}})?(?![\w:])",
+    rf"(?<![\w:])::(?:{_H}(?::{_H}){{0,6}})(?![\w:])",
+    # MAC addresses.
+    r"\b[0-9a-f]{2}(?:[:-][0-9a-f]{2}){5}\b",
 ]
 # Derived names this short are too generic to redact safely (e.g. "lan").
 MIN_DERIVED = 4
@@ -132,8 +147,44 @@ def check(args, pats):
     return 1 if bad else 0
 
 
+def self_test():
+    """Built-in patterns only (no machine or local names). The addresses are
+    documentation and reserved ranges, assembled at run time so this file
+    contains no literal address for the pre-commit check to trip on."""
+    ip4 = lambda *o: ".".join(map(str, o))
+    ip6 = ":".join
+    must_redact = [
+        ip4(192, 0, 2, 17), ip4(10, 1, 2, 3), ip4(100, 64, 1, 2),        # TEST-NET-1, private, CGNAT
+        f"endpoint {ip4(203, 0, 113, 9)}:51822",                          # TEST-NET-3 with a port
+        ip6(["2001", "db8", "1", "2", "3", "4", "5", "6"]),               # full IPv6
+        ip6(["2001", "db8", ""]) + ":1", "fe80" + ":" + ":1/64", ":" + ":1",  # compressed IPv6
+        f"[{ip6(['2001', 'db8', ''])}:1]:443",                            # bracketed with a port
+        ip6(["aa", "bb", "cc", "dd", "ee", "ff"]), "-".join(["AA"] * 6),  # MAC addresses
+    ]
+    must_keep = [
+        "version: 0.8.0-dev (build 12020, commit 0ec4027a2)",
+        "Mesa 26.0.8-1ubuntu0.3, libvulkan 1.4.341.0, kernel 7.0.0-38-generic",
+        "captured 2026-10-31T15:59:43Z at 12:09:42",
+        "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
+        "pp2048 @ d8192 | 81.82 ± 0.00 | GTT 15438 MiB | ratio 1.36x",
+        "bios 03.20 (06/23/2026), pci 0x15bf rev 0xc4",
+        "a five-part version 1.2.3.4.5",
+        "terminate called after throwing an instance of vk::DeviceLostError",
+        "std::vector<int> and ggml::cpu and llama_model_loader: - kv 0: general.architecture",
+    ]
+    pats = [re.compile(p, re.IGNORECASE) for p in BUILT_IN]
+    failed = [f"missed: {s}" for s in must_redact if "[redacted]" not in redact(s, pats)]
+    failed += [f"false positive: {s} -> {redact(s, pats)}" for s in must_keep if redact(s, pats) != s]
+    for f in failed:
+        print(f, file=sys.stderr)
+    print("self-test " + ("FAILED" if failed else f"ok ({len(must_redact) + len(must_keep)} cases)"))
+    return 1 if failed else 0
+
+
 def main():
     cmd, args = (sys.argv[1], sys.argv[2:]) if len(sys.argv) > 1 else ("", [])
+    if cmd == "--self-test":
+        return self_test()
     pats = patterns()
     if cmd == "filter":
         sys.stdout.write(redact(sys.stdin.read(), pats))
