@@ -1,6 +1,6 @@
 # Private names to keep out of results and out of this repository, one
 # regular expression per line, matched case-insensitively. Copy to
-# ~/.config/amd-ryzen-inference/redact.txt (or set REDACT_FILE) and edit.
+# ~/.config/amd-ryzen-inference-testing/redact.txt (or set REDACT_FILE) and edit.
 # Keep the real file out of the repository: the list itself is private.
 #
 # Already covered without this file: this machine's hostname, its DNS search

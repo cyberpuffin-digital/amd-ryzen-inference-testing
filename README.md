@@ -134,7 +134,7 @@ repository, since that list would publish it. It is derived from your machine
 (hostname, DNS search domains, username), plus a local file for anything else,
 such as internal domains or other hosts: copy
 [`bench/redact.example.txt`](bench/redact.example.txt) to
-`~/.config/amd-ryzen-inference/redact.txt`. All IPv4 and IPv6 addresses
+`~/.config/amd-ryzen-inference-testing/redact.txt`. All IPv4 and IPv6 addresses
 (private, CGNAT and public; loopback excepted) and MAC addresses are built in. `bench/redact.py patterns` shows what is in use.
 
 The same patterns guard commits. Enable the hooks once per clone:

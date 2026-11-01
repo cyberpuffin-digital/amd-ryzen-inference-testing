@@ -8,7 +8,7 @@
    closed. If you can't, keep the warnings: they're recorded in `env.json`
    and shown in the report.
 3. Keep private names out. Put your internal domains and host names in
-   `~/.config/amd-ryzen-inference/redact.txt` (see
+   `~/.config/amd-ryzen-inference-testing/redact.txt` (see
    `bench/redact.example.txt`) **before** running, and enable the hooks with
    `git config core.hooksPath .githooks`; see "Privacy" in the README. Then
    read `env.json` and `report.md` yourself before committing.

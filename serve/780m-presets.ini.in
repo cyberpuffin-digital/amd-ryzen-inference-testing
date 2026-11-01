@@ -24,6 +24,9 @@ ctx-size = 16384
 parallel = 1
 jinja = true
 load-on-startup = false
+; Free the GPU memory of a model nobody has used for 10 minutes (it reloads on
+; the next request); without this, the last model holds 5-18 GB indefinitely.
+sleep-idle-seconds = 600
 
 ; Best quality-for-speed: MoE, ~4B active; 41 t/s with its MTP draft head.
 ; 14.6 GB: needs GTT of ~17 GiB or more.

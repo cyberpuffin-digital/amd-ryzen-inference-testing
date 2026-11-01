@@ -72,7 +72,7 @@ def redact_file():
     if os.environ.get("REDACT_FILE"):
         return pathlib.Path(os.environ["REDACT_FILE"])
     base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-    return pathlib.Path(base) / "amd-ryzen-inference" / "redact.txt"
+    return pathlib.Path(base) / "amd-ryzen-inference-testing" / "redact.txt"
 
 
 def derived_names():
