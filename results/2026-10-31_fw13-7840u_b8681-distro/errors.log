@@ -1,0 +1,10 @@
+[gpu-vs-cpu] failed: -m ~/models/ggml-org/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -fa 1 -p 512 -n 128
+[gpu-vs-cpu] failed: -m ~/models/ggml-org/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_0.gguf -dev none -ngl 0 -t 8 -p 512 -n 128
+[depth] failed: -m ~/models/ggml-org/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -fa 1 -ub 256 -p 2048 -n 64 -d 0,8192,16384
+[tuning] failed: -m ~/models/ggml-org/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -ub 256,512 -fa 0,1 -p 2048 -n 64 -d 8192
+[kv-type] failed: -m ~/models/ggml-org/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -ub 256 -fa 1 -ctk f16,q8_0 -ctv f16,q8_0 -p 2048 -n 64 -d 8192
+[gpu-vs-cpu] failed: -m ~/models/ggml-org/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -fa 1 -p 512 -n 128
+[gpu-vs-cpu] failed: -m ~/models/ggml-org/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_0.gguf -dev none -ngl 0 -t 8 -p 512 -n 128
+[depth] failed: -m ~/models/ggml-org/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -fa 1 -ub 256 -p 2048 -n 64 -d 0,8192,16384
+[tuning] failed: -m ~/models/ggml-org/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -ub 256,512 -fa 0,1 -p 2048 -n 64 -d 8192
+[kv-type] failed: -m ~/models/ggml-org/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_0.gguf -dev Vulkan0 -ngl 99 -ub 256 -fa 1 -ctk f16,q8_0 -ctv f16,q8_0 -p 2048 -n 64 -d 8192
