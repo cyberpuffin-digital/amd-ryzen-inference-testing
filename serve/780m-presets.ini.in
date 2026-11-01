@@ -1,0 +1,48 @@
+; llama.cpp router presets for a Radeon 780M (Ryzen 7040/8040) with 32 GB.
+; serve/run.sh fills in @MODELS_DIR@ and starts `llama serve` in router mode:
+; one server, models loaded on demand by name, one model in memory at a time.
+; Settings and model choices come from analysis/2026-10-31-fw13-7840u-baseline.md.
+; Needs an upstream llama.cpp build (MTP drafting, --spec-type, Gemma 4 E-series)
+; and, for the two large models, GTT raised above the default half of RAM
+; (hardware/780m.md: ttm.pages_limit).
+version = 1
+
+[*]
+; GPU (Vulkan) only, every layer on it.
+device = Vulkan0
+ngl = 99
+; Flash attention always helped; a q8_0 KV cache halves its memory at no
+; measured cost on upstream builds.
+flash-attn = on
+cache-type-k = q8_0
+cache-type-v = q8_0
+; -ub 512 crashed the GPU queue at 16k context on an older build; 256 is safe.
+ubatch-size = 256
+; Pinned context, so memory use is predictable. Tested to 16k.
+ctx-size = 16384
+; One user, one slot: each extra slot adds a whole KV cache.
+parallel = 1
+jinja = true
+load-on-startup = false
+
+; Best quality-for-speed: MoE, ~4B active; 41 t/s with its MTP draft head.
+; 14.6 GB: needs GTT of ~17 GiB or more.
+[gemma-4-26b-a4b]
+model = @MODELS_DIR@/ggml-org/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf
+spec-draft-model = @MODELS_DIR@/ggml-org/gemma-4-26B-A4B-it-GGUF/mtp-gemma-4-26B-A4B-it-Q4_0.gguf
+spec-type = draft-mtp
+spec-draft-ngl = 99
+spec-draft-device = Vulkan0
+
+; Fastest large model without drafting: MoE, ~3B active; 36 t/s.
+; Drafting slowed it (0.75x), so none. 17.7 GB: needs GTT of ~20 GiB or more.
+[qwen3-30b-a3b]
+model = @MODELS_DIR@/unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
+
+; Small and fast: 58 t/s with its MTP draft head, 4.6 GB, fits the default GTT.
+[gemma-4-e4b]
+model = @MODELS_DIR@/ggml-org/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_0.gguf
+spec-draft-model = @MODELS_DIR@/ggml-org/gemma-4-E4B-it-GGUF/mtp-gemma-4-E4B-it-Q4_0.gguf
+spec-type = draft-mtp
+spec-draft-ngl = 99
+spec-draft-device = Vulkan0

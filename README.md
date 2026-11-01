@@ -1,5 +1,59 @@
 # amd-ryzen-inference
 
+## TL;DR: what to run on a Radeon 780M
+
+Three picks, from the [first baseline](analysis/2026-10-31-fw13-7840u-baseline.md)
+(Framework Laptop 13, Ryzen 7 7840U, 32 GB; upstream llama.cpp build 12020, Vulkan):
+
+| Pick | Model | File | Generation | Prompt | GPU memory (GTT) it needs |
+|---|---|--:|--:|--:|---|
+| **Default** | Gemma 4 26B-A4B, Q4_0, with its MTP draft head | 14.6 GB | **~41 t/s** (25 without MTP) | ~490 t/s | ~17 GiB: raise GTT (below) |
+| **Largest** | Qwen3-30B-A3B-Instruct-2507, UD-Q4_K_XL | 17.7 GB | **~36 t/s** | ~440 t/s | ~20 GiB: raise GTT (below) |
+| **Small and fast** | Gemma 4 E4B, Q4_0, with its MTP draft head | 4.6 GB | **~58 t/s** (24 without MTP) | ~610 t/s | fits the default |
+
+The first two are mixture-of-experts models: each token reads only a few
+billion parameters, so they generate faster than a dense 8B model while
+holding far more knowledge. Picks are by speed at each size; this repository
+doesn't measure answer quality, so try them on your own tasks.
+
+**Settings** (all three; the reasons are in the baseline write-up):
+
+```
+llama serve -m <model> -dev Vulkan0 -ngl 99 -fa on -ctk q8_0 -ctv q8_0 -ub 256 -c 16384 -np 1 --jinja
+# Gemma 4 only, the MTP draft head:  -md mtp-<model>.gguf --spec-type draft-mtp -ngld 99 -devd Vulkan0
+```
+
+- **Use an upstream llama.cpp build.** Distro packages lag: against Ubuntu's
+  8681, upstream read prompts 28-41% faster, and 8681 can't load Gemma 4 E4B
+  or use MTP.
+- **Raise GTT** (the GPU's share of RAM, half by default) for the two large
+  models: add `ttm.pages_limit=6291456` (24 GiB) to the kernel command line
+  and reboot. Near-full GTT froze an older kernel; see
+  [hardware/780m.md](hardware/780m.md).
+- **Don't add a draft model to Qwen3-30B-A3B**: drafting made it slower (0.75x).
+- **Gemma 4 thinks before answering.** Give it room (`max_tokens` in the
+  hundreds), or switch it off with `--reasoning off`.
+
+**Switch between all three from one server**, loading each on demand
+([serve/](serve/)):
+
+```bash
+bench/build-llama-cpp.sh                                   # upstream llama.cpp with Vulkan
+grep -E '^#|26B-A4B|E4B-it|30B-A3B' models/780m-32gb.tsv > /tmp/picks.tsv
+models/fetch.sh ~/models /tmp/picks.tsv                    # the three picks, ~39 GB
+serve/run.sh                                               # http://127.0.0.1:8080
+```
+
+Then pick `gemma-4-26b-a4b`, `qwen3-30b-a3b` or `gemma-4-e4b` in the web UI's
+model menu, or as `"model"` in any OpenAI-compatible client. One model is in
+memory at a time; switching takes 10-20 seconds.
+
+Speeds are from one run of each test. MTP gains were measured on a code prompt
+at temperature 0; in a chat test through the server, Gemma 4 E4B with MTP
+generated 49-54 t/s.
+
+## About
+
 Reproducible measurements of local LLM inference on AMD Ryzen APUs: the CPU,
 the integrated Radeon GPU and, where it can be used, the NPU, all sharing one
 pool of system memory.
@@ -81,7 +135,7 @@ repository, since that list would publish it. It is derived from your machine
 such as internal domains or other hosts: copy
 [`bench/redact.example.txt`](bench/redact.example.txt) to
 `~/.config/amd-ryzen-inference/redact.txt`. All IPv4 and IPv6 addresses
-(private, CGNAT and public) and MAC addresses are built in. `bench/redact.py patterns` shows what is in use.
+(private, CGNAT and public; loopback excepted) and MAC addresses are built in. `bench/redact.py patterns` shows what is in use.
 
 The same patterns guard commits. Enable the hooks once per clone:
 

@@ -4,7 +4,8 @@
 # Keep the real file out of the repository: the list itself is private.
 #
 # Already covered without this file: this machine's hostname, its DNS search
-# domains, your username, every IPv4 and IPv6 address, and MAC addresses.
+# domains, your username, every IPv4 and IPv6 address except loopback, and
+# MAC addresses.
 #
 # Examples:
 #   example\.(com|net)       an internal domain, every subdomain included

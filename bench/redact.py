@@ -27,7 +27,8 @@ instead of the matched text, because public CI logs must not show what was
 found.
 
 Also built in, because they are never wanted in published results: every IPv4
-and IPv6 address (private, CGNAT and public alike) and MAC addresses.
+and IPv6 address (private, CGNAT and public alike; loopback and 0.0.0.0
+excepted, as they identify nothing) and MAC addresses.
 `bench/redact.py --self-test` checks them against addresses and look-alikes
 (version strings, timestamps, C++ scopes).
 
@@ -60,6 +61,9 @@ BUILT_IN = [
     # MAC addresses.
     r"\b[0-9a-f]{2}(?:[:-][0-9a-f]{2}){5}\b",
 ]
+# Loopback and unspecified addresses mean "this machine" everywhere, so they
+# identify nothing (and docs need them: a server on localhost).
+LOOPBACK = re.compile(r"^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|0\.0\.0\.0|::1?)$")
 # Derived names this short are too generic to redact safely (e.g. "lan").
 MIN_DERIVED = 4
 
@@ -99,7 +103,7 @@ def redact(text, pats):
     home = os.path.expanduser("~")
     text = text.replace(home, "~")
     for p in pats:
-        text = p.sub("[redacted]", text)
+        text = p.sub(lambda m: m.group(0) if LOOPBACK.match(m.group(0)) else "[redacted]", text)
     return text
 
 
@@ -108,7 +112,7 @@ def find(text, pats):
     hits = []
     for n, line in enumerate(text.splitlines(), 1):
         for i, p in enumerate(pats, 1):
-            hits += [(n, m.group(0), i) for m in p.finditer(line)]
+            hits += [(n, m.group(0), i) for m in p.finditer(line) if not LOOPBACK.match(m.group(0))]
     return hits
 
 
@@ -166,7 +170,7 @@ def self_test():
         ip4(192, 0, 2, 17), ip4(10, 1, 2, 3), ip4(100, 64, 1, 2),        # TEST-NET-1, private, CGNAT
         f"endpoint {ip4(203, 0, 113, 9)}:51822",                          # TEST-NET-3 with a port
         ip6(["2001", "db8", "1", "2", "3", "4", "5", "6"]),               # full IPv6
-        ip6(["2001", "db8", ""]) + ":1", "fe80" + ":" + ":1/64", ":" + ":1",  # compressed IPv6
+        ip6(["2001", "db8", ""]) + ":1", "fe80" + ":" + ":1/64", ip6(["2001", "db8", "", "5"]),  # compressed IPv6
         f"[{ip6(['2001', 'db8', ''])}:1]:443",                            # bracketed with a port
         ip6(["aa", "bb", "cc", "dd", "ee", "ff"]), "-".join(["AA"] * 6),  # MAC addresses
     ]
@@ -179,6 +183,7 @@ def self_test():
         "bios 03.20 (06/23/2026), pci 0x15bf rev 0xc4",
         "a five-part version 1.2.3.4.5",
         "terminate called after throwing an instance of vk::DeviceLostError",
+        f"serve on {ip4(127, 0, 0, 1)}:8080, bind {ip4(0, 0, 0, 0)}, or [" + ":" + ":1]",  # loopback
         "std::vector<int> and ggml::cpu and llama_model_loader: - kv 0: general.architecture",
     ]
     pats = [re.compile(p, re.IGNORECASE) for p in BUILT_IN]
