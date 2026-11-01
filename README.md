@@ -45,8 +45,15 @@ serve/run.sh                                               # http://127.0.0.1:80
 ```
 
 Then pick `gemma-4-26b-a4b`, `qwen3-30b-a3b` or `gemma-4-e4b` in the web UI's
-model menu, or as `"model"` in any OpenAI-compatible client. One model is in
-memory at a time; switching takes 10-20 seconds.
+model menu, or as `"model"` in any OpenAI-compatible client; embeddings are
+`nomic-embed-text` on `/v1/embeddings`. Two models stay loaded at most (a chat
+model and the embedder): the router unloads the least recently used one when a
+new model would leave under 2 GiB of GPU memory free, so the two large chat
+models are never loaded together. Switching chat models takes 10-20 seconds.
+`LISTEN_DOCKER=1 serve/run.sh` also listens on the Docker bridge gateway, for
+containers on the same machine (`host.docker.internal`), without exposing the
+router on the LAN; a host firewall must still admit the port from Docker
+networks.
 
 Speeds are from one run of each test. MTP gains were measured on a code prompt
 at temperature 0; in a chat test through the server, Gemma 4 E4B with MTP

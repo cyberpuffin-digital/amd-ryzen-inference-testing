@@ -25,3 +25,7 @@ Qwen/Qwen3-1.7B-GGUF	90862c4b9d2787eaed51d12237eafdfe7c5f6077	Qwen3-1.7B-Q8_0.gg
 ggml-org/gemma-4-E4B-it-GGUF	a69f018d7678a2b9f5e705f8903d6fb29b9b25dc	mtp-gemma-4-E4B-it-Q4_0.gguf	59678240	d19a11e4fd5019967d9296f77f4d3e139c8903909f70c3a9cf009c9af4b9b88d
 ggml-org/gemma-4-26B-A4B-it-GGUF	9cf8c8db0f83fb4582f15381f8fb1a7c1b0b9ca2	mtp-gemma-4-26B-A4B-it-Q4_0.gguf	251939520	e00b0ce326d03d8f6f6972ad2320fe90b6ff25a3da5fc51bec15efe283052aa2
 ggml-org/gpt-oss-20b-GGUF	15dcfc7e7c608c6161507211ed43c5b590801b4b	eagle3-gpt-oss-20b-Q8_0.gguf	921488000	6955f98a701e97a8c969f3ff33be8ba17b35bd60e5ac96258d2c42d710c7d63f
+
+# Embeddings: the same weights as Ollama's nomic-embed-text (f16), for knowledge-base
+# and knowledge-graph clients; served as the `nomic-embed-text` preset in serve/.
+nomic-ai/nomic-embed-text-v1.5-GGUF	0188c9bf409793f810680a5a431e7b899c46104c	nomic-embed-text-v1.5.f16.gguf	274290560	f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb

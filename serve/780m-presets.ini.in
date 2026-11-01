@@ -1,6 +1,7 @@
 ; llama.cpp router presets for a Radeon 780M (Ryzen 7040/8040) with 32 GB.
 ; serve/run.sh fills in @MODELS_DIR@ and starts `llama serve` in router mode:
-; one server, models loaded on demand by name, one model in memory at a time.
+; one server, models loaded on demand by name; serve/run.sh's memory margin
+; keeps two large chat models from being loaded together.
 ; Settings and model choices come from analysis/2026-10-31-fw13-7840u-baseline.md.
 ; Needs an upstream llama.cpp build (MTP drafting, --spec-type, Gemma 4 E-series)
 ; and, for the two large models, GTT raised above the default half of RAM
@@ -49,3 +50,18 @@ spec-draft-model = @MODELS_DIR@/ggml-org/gemma-4-E4B-it-GGUF/mtp-gemma-4-E4B-it-
 spec-type = draft-mtp
 spec-draft-ngl = 99
 spec-draft-device = Vulkan0
+
+; Embeddings for knowledge bases and knowledge graphs: nomic-embed-text v1.5,
+; the same f16 weights Ollama serves under this name, so vectors made there
+; stay comparable. Small (274 MB), so it can stay loaded beside a chat model.
+; Embedding needs the whole input in one batch: ubatch = batch = context, at
+; the 2048 tokens it was trained on (inputs here are ~1000-character chunks).
+[nomic-embed-text]
+model = @MODELS_DIR@/nomic-ai/nomic-embed-text-v1.5-GGUF/nomic-embed-text-v1.5.f16.gguf
+embeddings = true
+ctx-size = 2048
+batch-size = 2048
+ubatch-size = 2048
+flash-attn = auto
+cache-type-k = f16
+cache-type-v = f16

@@ -89,7 +89,7 @@ if (($#)); then
     models=("$@")
 else
     mapfile -t models < <(find "$MODELS_DIR" -name '*.gguf' -size +100M \
-        ! -name 'mmproj-*' ! -name 'mtp-*' ! -name 'eagle3-*' | sort)
+        ! -name 'mmproj-*' ! -name 'mtp-*' ! -name 'eagle3-*' ! -name 'nomic-embed-*' | sort)
 fi
 ((${#models[@]})) || { echo "no .gguf files under $MODELS_DIR" >&2; exit 1; }
 
