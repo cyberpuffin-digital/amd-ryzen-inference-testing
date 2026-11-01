@@ -18,7 +18,7 @@ hardware can repeat it.
 
 - **Hardware so far:** Radeon 780M (Framework Laptop 13, Ryzen 7 7840U, 32 GB). Notes: [hardware/780m.md](hardware/780m.md).
 - **Engine:** llama.cpp with the Vulkan (RADV) backend, comparing a distro package with an upstream build. Why this engine: [docs/engine-choice.md](docs/engine-choice.md).
-- **Results:** [results/](results/). The first full baseline run is in progress.
+- **Results:** [results/](results/). First baseline, distro vs upstream llama.cpp on nine models: [analysis/2026-10-31-fw13-7840u-baseline.md](analysis/2026-10-31-fw13-7840u-baseline.md).
 
 ## Reproduce a run
 
@@ -59,6 +59,7 @@ download.
 
 ```
 bench/      build-llama-cpp.sh, run.sh, capture-env.sh, report.py, redact.py
+analysis/   compare.py (runs side by side) and write-ups of what the results show
 .githooks/  pre-commit, commit-msg, pre-push: refuse private names (bench/redact.py)
 .forgejo/   CI: the same check on every push and pull request
 models/     pinned model sets (*.tsv), fetch.sh, hf-manifest.py
