@@ -1,4 +1,4 @@
-# amd-ryzen-inference
+# amd-ryzen-inference-testing
 
 ## TL;DR: what to run on a Radeon 780M
 
