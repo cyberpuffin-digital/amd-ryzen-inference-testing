@@ -29,7 +29,7 @@ fi
 
 # Presets need absolute paths; render the template, and refuse to start with
 # a preset whose model file is missing rather than fail at first request.
-rendered=${XDG_CONFIG_HOME:-$HOME/.config}/amd-ryzen-inference/presets.ini
+rendered=${XDG_CONFIG_HOME:-$HOME/.config}/amd-ryzen-inference-testing/presets.ini
 mkdir -p "$(dirname "$rendered")"
 sed "s#@MODELS_DIR@#$MODELS_DIR#g" "$PRESETS" >"$rendered"
 missing=0

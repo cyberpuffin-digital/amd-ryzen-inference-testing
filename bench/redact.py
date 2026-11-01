@@ -16,7 +16,7 @@ private names in a public file would publish them. It comes from:
   domains in /etc/resolv.conf, and the username;
 - a local file, one regular expression per line (# for comments), for
   anything else: internal domains, other hosts, project names. Default
-  ${XDG_CONFIG_HOME:-~/.config}/amd-ryzen-inference/redact.txt, or
+  ${XDG_CONFIG_HOME:-~/.config}/amd-ryzen-inference-testing/redact.txt, or
   $REDACT_FILE. See bench/redact.example.txt.
 
 In CI (.forgejo/workflows/sanitize.yaml) the local file comes from an Actions
